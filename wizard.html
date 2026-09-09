@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>維修檢查確認表</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="topbar">
+    <div class="topbar-row">
+      <button class="topbar-back" id="btnBackHome" type="button">‹</button>
+      <div class="topbar-titles">
+        <div class="topbar-case" id="topCaseId">REP-000000</div>
+        <div class="topbar-title" id="topStepTitle">基本資料</div>
+      </div>
+    </div>
+  </div>
+  <div class="step-progress" id="stepProgress"></div>
+  <div class="step-label" id="stepLabel">步驟 1／12</div>
+
+  <div id="formErrorBar" class="form-error-bar"></div>
+
+  <form id="wizardForm" class="page-pad" onsubmit="return false;">
+
+    <!-- Step 1: 基本資料 -->
+    <section class="step" data-step="1">
+      <div class="card">
+        <div class="card-title">基本資料</div>
+        <div class="card-hint">案件編號自動產生，時間自動帶入，僅需補上客戶與型號資訊。</div>
+        <div class="field">
+          <label>案件編號</label>
+          <input class="input" id="caseIdField" readonly />
+        </div>
+        <div class="field">
+          <label>日期／時間</label>
+          <input class="input" id="datetimeField" readonly />
+        </div>
+        <div class="field">
+          <label>技師姓名</label>
+          <input class="input" type="text" data-bind="basic.technician" placeholder="請輸入技師姓名" />
+        </div>
+        <div class="field">
+          <label>客戶姓名</label>
+          <input class="input" type="text" data-bind="basic.customerName" placeholder="請輸入客戶姓名" />
+        </div>
+        <div class="field">
+          <label>聯絡方式</label>
+          <input class="input" type="tel" data-bind="basic.contact" placeholder="電話 / LINE ID" />
+        </div>
+        <div class="field">
+          <label>手機型號</label>
+          <input class="input" type="text" data-bind="basic.phoneModel" placeholder="例如：iPhone 15 Pro" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 2: 維修前外觀檢查 -->
+    <section class="step" data-step="2">
+      <div class="card">
+        <div class="card-title">維修前外觀檢查</div>
+        <div class="card-hint">請技師與客戶共同確認</div>
+
+        <div class="choice-row">
+          <div class="choice-row-label">螢幕</div>
+          <div class="choice-group" data-bind="preCheck.appearance.screen">
+            <button type="button" class="choice-btn" data-value="正常">正常</button>
+            <button type="button" class="choice-btn" data-value="已有損傷">已有損傷</button>
+          </div>
+        </div>
+        <div class="choice-row">
+          <div class="choice-row-label">背板</div>
+          <div class="choice-group" data-bind="preCheck.appearance.back">
+            <button type="button" class="choice-btn" data-value="正常">正常</button>
+            <button type="button" class="choice-btn" data-value="已有損傷">已有損傷</button>
+          </div>
+        </div>
+        <div class="choice-row">
+          <div class="choice-row-label">邊框</div>
+          <div class="choice-group" data-bind="preCheck.appearance.frame">
+            <button type="button" class="choice-btn" data-value="正常">正常</button>
+            <button type="button" class="choice-btn" data-value="已有損傷">已有損傷</button>
+          </div>
+        </div>
+        <div class="choice-row">
+          <div class="choice-row-label">鏡頭玻璃</div>
+          <div class="choice-group" data-bind="preCheck.appearance.cameraGlass">
+            <button type="button" class="choice-btn" data-value="正常">正常</button>
+            <button type="button" class="choice-btn" data-value="已有損傷">已有損傷</button>
+          </div>
+        </div>
+        <div class="choice-row">
+          <div class="choice-row-label">機身</div>
+          <div class="choice-group" data-bind="preCheck.appearance.body">
+            <button type="button" class="choice-btn" data-value="正常">正常</button>
+            <button type="button" class="choice-btn" data-value="彎曲／變形">彎曲／變形</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">既有損傷</div>
+        <div class="card-hint">可多選</div>
+        <div class="tap-check-list">
+          <div class="tap-check" data-bind="preCheck.existingDamage.none"><div class="box"></div><div class="label">無</div></div>
+          <div class="tap-check" data-bind="preCheck.existingDamage.screenCrack"><div class="box"></div><div class="label">螢幕裂痕</div></div>
+          <div class="tap-check" data-bind="preCheck.existingDamage.backCrack"><div class="box"></div><div class="label">背板裂痕</div></div>
+          <div class="tap-check" data-bind="preCheck.existingDamage.frameDent"><div class="box"></div><div class="label">邊框凹傷</div></div>
+          <div class="tap-check" data-bind="preCheck.existingDamage.cameraBroken"><div class="box"></div><div class="label">鏡頭破損</div></div>
+          <div class="tap-check" data-bind="preCheck.existingDamage.bodyDeformed"><div class="box"></div><div class="label">機身變形</div></div>
+          <div class="tap-check" data-bind="preCheck.existingDamage.other"><div class="box"></div><div class="label">其他</div></div>
+        </div>
+        <div class="field choice-note" data-show-if="preCheck.existingDamage.other" style="display:none;">
+          <textarea class="input" data-bind="preCheck.existingDamage.otherText" placeholder="請說明其他既有損傷"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3: 維修前功能檢查 -->
+    <section class="step" data-step="3">
+      <div class="card">
+        <div class="card-title">維修前功能檢查</div>
+        <div class="card-hint">只檢查本次維修相關功能＋重要基本功能</div>
+
+        <div id="preFunctionChecklist"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">是否有其他原有故障？</div>
+        <div class="choice-group" data-bind="preCheck.otherFault.has" data-bool-choice="1">
+          <button type="button" class="choice-btn" data-value="false">無</button>
+          <button type="button" class="choice-btn" data-value="true">有</button>
+        </div>
+        <div class="field choice-note" data-show-if="preCheck.otherFault.has" style="display:none;">
+          <textarea class="input" data-bind="preCheck.otherFault.text" placeholder="請說明其他原有故障"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 4: 維修前照片 -->
+    <section class="step" data-step="4">
+      <div class="card">
+        <div class="card-title">維修前照片</div>
+        <div class="card-hint">請拍攝以下角度作為維修前存證</div>
+        <div class="photo-grid">
+          <div class="photo-slot-wrap" data-photo-slot="prePhotos.front" data-photo-label="手機正面" data-photo-required="1"></div>
+          <div class="photo-slot-wrap" data-photo-slot="prePhotos.back" data-photo-label="手機背面" data-photo-required="1"></div>
+          <div class="photo-slot-wrap" data-photo-slot="prePhotos.repairArea" data-photo-label="維修部位" data-photo-required="1"></div>
+          <div class="photo-slot-wrap" data-photo-slot="prePhotos.damage" data-photo-label="明顯損傷（如有）" data-photo-required="0"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 5: 本次維修項目 -->
+    <section class="step" data-step="5">
+      <div class="card">
+        <div class="card-title">本次維修項目</div>
+        <div class="card-hint">可多選</div>
+        <div class="tap-check-list">
+          <div class="tap-check" data-bind="repairContent.items.battery"><div class="box"></div><div class="label">電池更換</div></div>
+          <div class="tap-check" data-bind="repairContent.items.screen"><div class="box"></div><div class="label">螢幕更換</div></div>
+          <div class="tap-check" data-bind="repairContent.items.camera"><div class="box"></div><div class="label">鏡頭更換</div></div>
+          <div class="tap-check" data-bind="repairContent.items.speaker"><div class="box"></div><div class="label">喇叭／聽筒</div></div>
+          <div class="tap-check" data-bind="repairContent.items.chargingPort"><div class="box"></div><div class="label">充電／尾插</div></div>
+          <div class="tap-check" data-bind="repairContent.items.other"><div class="box"></div><div class="label">其他</div></div>
+        </div>
+        <div class="field choice-note" data-show-if="repairContent.items.other" style="display:none;">
+          <textarea class="input" data-bind="repairContent.items.otherText" placeholder="請說明其他維修項目"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">維修金額</div>
+        <div class="input-prefix-group">
+          <div class="input-prefix">NT$</div>
+          <input class="input" type="number" inputmode="numeric" data-bind="repairContent.price" placeholder="0" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">零件類型</div>
+        <div class="choice-group" data-bind="repairContent.partType">
+          <button type="button" class="choice-btn" data-value="original">原廠</button>
+          <button type="button" class="choice-btn" data-value="originalUsed">原廠拆機</button>
+          <button type="button" class="choice-btn" data-value="aftermarket">副廠</button>
+          <button type="button" class="choice-btn" data-value="other">其他</button>
+        </div>
+        <div class="field choice-note" data-show-if="repairContent.partType" data-show-if-value="other" style="display:none;">
+          <textarea class="input" data-bind="repairContent.partTypeOtherText" placeholder="請說明零件類型"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 6: 進行維修 (interstitial) -->
+    <section class="step" data-step="6">
+      <div class="card" style="text-align:center; padding:34px 20px;">
+        <div style="font-size:42px; margin-bottom:10px;">🔧</div>
+        <div class="card-title" style="font-size:17px;">進行維修</div>
+        <div class="card-hint" style="margin-bottom:22px;">請技師實際完成本次維修項目後，點擊下方按鈕進入維修完成檢查。</div>
+        <button type="button" class="btn btn-primary" id="btnRepairDone">✔ 維修已完成，開始驗收檢查</button>
+      </div>
+    </section>
+
+    <!-- Step 7: 維修完成檢查 -->
+    <section class="step" data-step="7">
+      <div class="card">
+        <div class="card-title">維修完成檢查</div>
+        <div id="postFunctionChecklist"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">維修後異常／備註</div>
+        <div class="choice-group" data-bind="postCheck.abnormal.has" data-bool-choice="1">
+          <button type="button" class="choice-btn" data-value="false">無</button>
+          <button type="button" class="choice-btn" data-value="true">有</button>
+        </div>
+        <div class="field choice-note" data-show-if="postCheck.abnormal.has" style="display:none;">
+          <textarea class="input" data-bind="postCheck.abnormal.text" placeholder="請說明維修後異常狀況"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 8: 維修完成照片 -->
+    <section class="step" data-step="8">
+      <div class="card">
+        <div class="card-title">維修完成照片</div>
+        <div class="card-hint">請拍攝以下角度作為維修完成存證</div>
+        <div class="photo-grid">
+          <div class="photo-slot-wrap" data-photo-slot="postPhotos.front" data-photo-label="手機正面" data-photo-required="1"></div>
+          <div class="photo-slot-wrap" data-photo-slot="postPhotos.back" data-photo-label="手機背面" data-photo-required="1"></div>
+          <div class="photo-slot-wrap" data-photo-slot="postPhotos.repairArea" data-photo-label="維修部位" data-photo-required="1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 9: 客戶確認 -->
+    <section class="step" data-step="9">
+      <div class="card">
+        <div class="card-title">客戶確認</div>
+        <div class="card-hint">以下項目皆需勾選才能進入下一步</div>
+        <div class="tap-check-list">
+          <div class="tap-check" data-bind="customerConfirm.item1"><div class="box"></div><div class="label">維修前手機狀況已確認。</div></div>
+          <div class="tap-check" data-bind="customerConfirm.item2"><div class="box"></div><div class="label">本次維修項目及價格已確認。</div></div>
+          <div class="tap-check" data-bind="customerConfirm.item3"><div class="box"></div><div class="label">維修完成後已由技師進行檢查。</div></div>
+          <div class="tap-check" data-bind="customerConfirm.item4"><div class="box"></div><div class="label">本人已確認目前手機狀況。</div></div>
+          <div class="tap-check" data-bind="customerConfirm.item5"><div class="box"></div><div class="label">如有未完成或無法測試之項目，技師已向本人說明。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 10: 客戶手寫簽名 -->
+    <section class="step" data-step="10">
+      <div class="card">
+        <div class="card-title">客戶手寫簽名</div>
+        <div class="card-hint">支援手指、觸控筆或滑鼠簽名</div>
+        <div class="sig-wrap"><canvas class="sig-canvas" id="sigCustomer"></canvas></div>
+        <div class="sig-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnClearCustomerSig">清除</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnRedoCustomerSig">重新簽名</button>
+        </div>
+        <div class="sig-status pending" id="customerSigStatus">尚未簽名</div>
+      </div>
+    </section>
+
+    <!-- Step 11: 技師確認簽名 -->
+    <section class="step" data-step="11">
+      <div class="card">
+        <div class="card-title">技師確認</div>
+        <div class="card-hint">本人確認上述維修及檢查已完成。</div>
+        <div class="sig-wrap"><canvas class="sig-canvas" id="sigTech"></canvas></div>
+        <div class="sig-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnClearTechSig">清除</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnRedoTechSig">重新簽名</button>
+        </div>
+        <div class="sig-status pending" id="techSigStatus">尚未簽名</div>
+      </div>
+    </section>
+
+    <!-- Step 12: 確認資料 -->
+    <section class="step" data-step="12">
+      <div class="card">
+        <div class="card-title">確認資料</div>
+        <div class="card-hint">請再次確認以下內容，確認無誤後送出案件。</div>
+        <div id="summaryContainer"></div>
+      </div>
+    </section>
+
+  </form>
+
+  <!-- 送出成功後的完成頁面（取代表單顯示） -->
+  <div class="page-pad" id="completionScreen" style="display:none;">
+    <div class="card">
+      <div class="done-icon">✅</div>
+      <div class="done-title">維修案件已完成</div>
+      <div class="done-caseid" id="doneCaseId">REP-000000</div>
+      <div class="btn-block-group">
+        <button type="button" class="btn btn-outline" id="btnViewPdf">📄 查看 PDF</button>
+        <button type="button" class="btn btn-secondary" id="btnDownloadPdf">⬇️ 下載 PDF</button>
+        <button type="button" class="btn btn-line" id="btnSendLine">📲 傳送至 LINE</button>
+        <button type="button" class="btn btn-secondary" id="btnRedownloadPdf">📄 重新下載 PDF</button>
+      </div>
+      <div class="line-hint">請開啟 LINE 後，將剛產生的 PDF 附加至聊天室，再按下傳送。<br/>LINE 聊天室已開啟，請手動傳送 PDF。</div>
+      <button type="button" class="btn btn-dark" id="btnBackHome2" style="margin-top:16px;">回到首頁</button>
+    </div>
+  </div>
+
+  <div class="bottom-nav" id="bottomNav">
+    <button type="button" class="btn btn-secondary" id="btnPrevStep">上一步</button>
+    <button type="button" class="btn btn-outline" id="btnSaveDraft">儲存</button>
+    <button type="button" class="btn btn-primary" id="btnNextStep">下一步</button>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/db.js"></script>
+<script src="js/signature.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/wizard.js"></script>
+</body>
+</html>
