@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>案件紀錄</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-shell" style="padding-bottom:24px;">
+
+  <div class="topbar">
+    <div class="topbar-row">
+      <button class="topbar-back" id="btnBackHome" type="button">‹</button>
+      <div class="topbar-titles">
+        <div class="topbar-brand" id="brandLabel"></div>
+        <div class="topbar-title">案件紀錄</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-pad">
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="搜尋案件編號／客戶姓名／型號／日期" />
+    </div>
+    <div class="filter-chips" id="filterChips" style="margin-top:12px;">
+      <div class="chip active" data-status="all">全部</div>
+      <div class="chip" data-status="draft">草稿</div>
+      <div class="chip" data-status="in_progress">維修中</div>
+      <div class="chip" data-status="pending_confirmation">待客戶確認</div>
+      <div class="chip" data-status="completed">已完成</div>
+    </div>
+
+    <div class="row-between" style="margin-top:16px;">
+      <div class="card-title" style="margin:0;">案件列表</div>
+      <div id="resultCount" style="font-size:12.5px; color:var(--c-ink-dim);"></div>
+    </div>
+    <div id="caseList" class="stack" style="margin-top:10px;"></div>
+
+    <div class="card" style="margin-top:22px;">
+      <div class="card-title">資料備份</div>
+      <div class="card-hint">目前案件資料儲存在此裝置的瀏覽器中，建議定期匯出備份。</div>
+      <div class="btn-block-group">
+        <button type="button" class="btn btn-secondary" id="btnExport">⬇️ 匯出全部案件（JSON）</button>
+        <button type="button" class="btn btn-outline" id="btnImport">⬆️ 匯入案件（JSON）</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none;" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/db.js"></script>
+<script src="js/records.js"></script>
+</body>
+</html>
