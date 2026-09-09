@@ -9,7 +9,7 @@
 // 請將這裡換成實際的 LINE 聊天室 / 社群 / 個人的連結
 // 例如： "https://line.me/R/ti/p/@your_line_id"
 // 或群組邀請連結： "https://line.me/R/ti/g/xxxxxxxxxx"
-const LINE_CHAT_URL = "YOUR_LINE_CHAT_URL";
+const LINE_CHAT_URL = "https://line.me/R/ti/p/@417lyjkr";
 
 // 品牌顯示名稱（顯示於頁首與 PDF 報告）
 const BRAND_NAME = "NINTH LAB";
