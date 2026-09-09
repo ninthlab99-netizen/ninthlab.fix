@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>手機維修管理</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="topbar-titles">
+        <div class="topbar-brand" id="brandLabel"></div>
+        <div class="topbar-title">手機維修管理</div>
+        <div class="topbar-sub">維修檢查 · 客戶確認 · 案件管理</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-hero">
+    <div class="brand" id="brandLabel2"></div>
+    <h1>手機維修管理</h1>
+    <p>現場維修檢查、拍照存證、客戶與技師簽名，5 分鐘完成一份案件。</p>
+    <div class="draft-banner" id="draftBanner" style="display:none;">
+      <span id="draftBannerText"></span>
+      <button class="btn btn-sm btn-secondary" id="draftBannerBtn" type="button">查看</button>
+    </div>
+  </div>
+
+  <div class="page-pad">
+    <div class="stack">
+      <button class="btn btn-primary" id="btnNewCase" type="button">
+        <span class="btn-icon">＋</span> 建立新案件
+      </button>
+      <button class="btn btn-dark" id="btnRecords" type="button">📋 案件紀錄</button>
+      <button class="btn btn-secondary" id="btnContinueDraft" type="button" style="display:none;">✏️ 繼續未完成案件</button>
+    </div>
+
+    <div class="section" style="margin-top:22px;">
+      <div class="card-title" style="margin-bottom:10px;">最近案件</div>
+      <div id="recentList" class="stack"></div>
+    </div>
+
+    <div class="storage-warning" style="margin-top:6px;">
+      目前案件資料儲存在此裝置的瀏覽器中。清除瀏覽器網站資料、使用無痕模式或更換裝置可能造成資料遺失，建議定期匯出備份。
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/db.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>
