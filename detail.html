@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>案件詳細資料</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-shell" style="padding-bottom:100px;">
+
+  <div class="topbar no-print">
+    <div class="topbar-row">
+      <button class="topbar-back" id="btnBackRecords" type="button">‹</button>
+      <div class="topbar-titles">
+        <div class="topbar-case" id="topCaseId">REP-000000</div>
+        <div class="topbar-title">案件詳細資料</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-pad">
+    <div id="lockNotice" class="readonly-lock no-print" style="display:none;">此案件已完成，內容為唯讀，避免不小心修改。</div>
+    <div id="detailContainer"></div>
+  </div>
+
+  <div class="bottom-nav no-print" id="bottomNav">
+    <button type="button" class="btn btn-secondary" id="btnPrint">🖨️ 列印</button>
+    <button type="button" class="btn btn-outline" id="btnDownloadPdf">⬇️ PDF</button>
+    <button type="button" class="btn btn-primary" id="btnPrimaryAction">繼續編輯</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/db.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/detail.js"></script>
+</body>
+</html>
