@@ -60,7 +60,7 @@
       + 'style="width:100%;padding:12px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-size:15px;font-weight:700;">登入</button>'
       + '</div>';
     document.documentElement.appendChild(overlay);
-  document.documentElement.style.visibility = 'visible';
+    document.documentElement.style.visibility = 'visible';
 
     var accEl = overlay.querySelector('#authAccountInput');
     var pwEl = overlay.querySelector('#authPasswordInput');
@@ -74,7 +74,7 @@
         setLoggedIn();
         overlay.remove();
       } else {
-        errEl.textContent = '庸號或密碼錯誤，請再禄一次。';
+        errEl.textContent = '帳號或密碼錯誤，請再試一次。';
         pwEl.value = '';
         pwEl.focus();
       }

@@ -1,13 +1,28 @@
 /* ============================================================
  * pdf.js - 產生維修檢查確認表 PDF
- * 使用 jsPDF（CDN 載入，見各 html 的 <script> 標籤）
+ *
+ * 做法：先把報表內容畫成一段 HTML（用瀏覽器原生字型渲染），
+ * 用 html2canvas 把這段 HTML 轉成圖片，再用 jsPDF 把圖片切成
+ * A4 分頁貼進 PDF。
+ *
+ * 為什麼不直接用 jsPDF 的 doc.text() 畫中文？
+ * 因為 jsPDF 內建字型（Helvetica 等）只有英文字母字型，
+ * 不含中文字型對照表，直接畫中文字會變成亂碼符號。
+ * 改成先讓瀏覽器把中文用手機/電腦本身就有的字型渲染成圖片，
+ * 再放進 PDF，就不會有亂碼問題，也不需要另外下載、內嵌一份
+ * 很大的中文字型檔。
+ *
+ * 使用 jsPDF + html2canvas（皆透過 CDN 載入，見各 html 的 <script> 標籤）
  * 版面：A4，直式，適合手機瀏覽、列印、以及 LINE 傳送。
  * ============================================================ */
 
-const PDF_PAGE_W = 210;
-const PDF_PAGE_H = 297;
-const PDF_MARGIN = 12;
-const PDF_CONTENT_W = PDF_PAGE_W - PDF_MARGIN * 2;
+const PDF_PAGE_W = 210; // mm
+const PDF_PAGE_H = 297; // mm
+const PDF_RENDER_WIDTH_PX = 794; // ≈ A4 寬度 @ 96dpi，報表 HTML 用這個寬度繪製
+const PDF_RENDER_SCALE = 2; // html2canvas 放大倍率，讓文字與照片更清晰
+const PDF_MARGIN_PX = 40;
+const PDF_CONTENT_W_PX = PDF_RENDER_WIDTH_PX - PDF_MARGIN_PX * 2;
+const PDF_FONT_STACK = '-apple-system, BlinkMacSystemFont, "PingFang TC", "Heiti TC", "Microsoft JhengHei", "Noto Sans TC", "Segoe UI", Roboto, sans-serif';
 
 function pdfFileName(caseId) {
   return `${caseId}${PDF_FILENAME_SUFFIX}`;
@@ -21,184 +36,98 @@ function checkLabel(val) {
   return val || '未檢查';
 }
 
-/**
- * @param {Object} repair 完整案件資料
- * @returns {Promise<{doc: any, blob: Blob, dataUrl: string, filename: string}>}
- */
-async function generateRepairPDF(repair) {
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    throw new Error('PDF 產生元件尚未載入完成，請確認網路連線後重試。');
-  }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+function escapeHtml(str) {
+  return String(str === undefined || str === null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-  let y = PDF_MARGIN;
-  const lineGap = 6;
+/* ---------- HTML 版面小工具（純字串拼接，最後一次塞進 innerHTML） ---------- */
 
-  function ensureSpace(need) {
-    if (y + need > PDF_PAGE_H - PDF_MARGIN) {
-      doc.addPage();
-      y = PDF_MARGIN;
-    }
-  }
+function h1Html(text) {
+  return `<div style="font-size:16px;font-weight:700;color:#141414;margin:18px 0 8px;padding-bottom:5px;border-bottom:2.5px solid #2563eb;">${escapeHtml(text)}</div>`;
+}
 
-  function h1(text) {
-    ensureSpace(10);
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(20, 20, 20);
-    doc.text(text, PDF_MARGIN, y);
-    y += 2;
-    doc.setDrawColor(37, 99, 235);
-    doc.setLineWidth(0.6);
-    doc.line(PDF_MARGIN, y, PDF_PAGE_W - PDF_MARGIN, y);
-    y += 6;
-  }
+function h2Html(text) {
+  return `<div style="font-size:13px;font-weight:700;color:#2563eb;margin:12px 0 6px;">${escapeHtml(text)}</div>`;
+}
 
-  function h2(text) {
-    ensureSpace(8);
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(10.5);
-    doc.setTextColor(37, 99, 235);
-    doc.text(text, PDF_MARGIN, y);
-    y += lineGap;
-    doc.setTextColor(20, 20, 20);
-  }
+function rowHtml(label, value) {
+  const v = (value === undefined || value === null || value === '') ? '—' : value;
+  return `<div style="display:flex;padding:5px 0;border-bottom:1px solid #eee;font-size:11.5px;line-height:1.5;">
+    <div style="width:120px;flex:none;color:#5a5a5a;">${escapeHtml(label)}</div>
+    <div style="flex:1;color:#141414;white-space:pre-wrap;word-break:break-word;">${escapeHtml(v)}</div>
+  </div>`;
+}
 
-  function row(label, value) {
-    ensureSpace(lineGap);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(9.5);
-    doc.setTextColor(90, 90, 90);
-    doc.text(String(label), PDF_MARGIN, y);
-    doc.setTextColor(20, 20, 20);
-    doc.setFont(undefined, 'normal');
-    const valueText = value === undefined || value === null || value === '' ? '—' : String(value);
-    const lines = doc.splitTextToSize(valueText, PDF_CONTENT_W - 32);
-    doc.text(lines, PDF_MARGIN + 32, y);
-    y += lineGap * Math.max(1, lines.length);
-  }
-
-  function twoCol(items) {
-    // items: [[label,value],[label,value]] 一行放兩組
-    const colW = PDF_CONTENT_W / 2;
-    for (let i = 0; i < items.length; i += 2) {
-      ensureSpace(lineGap);
-      doc.setFontSize(9.3);
-      const [l1, v1] = items[i];
-      doc.setTextColor(90, 90, 90);
-      doc.text(String(l1), PDF_MARGIN, y);
-      doc.setTextColor(20, 20, 20);
-      doc.text(String(v1 == null || v1 === '' ? '—' : v1), PDF_MARGIN + 24, y);
-      if (items[i + 1]) {
-        const [l2, v2] = items[i + 1];
-        doc.setTextColor(90, 90, 90);
-        doc.text(String(l2), PDF_MARGIN + colW, y);
-        doc.setTextColor(20, 20, 20);
-        doc.text(String(v2 == null || v2 === '' ? '—' : v2), PDF_MARGIN + colW + 24, y);
+function twoColHtml(items) {
+  // items: [[label, value], [label, value], ...] 兩組排一行
+  let out = '<div>';
+  for (let i = 0; i < items.length; i += 2) {
+    out += '<div style="display:flex;padding:5px 0;border-bottom:1px solid #eee;font-size:11.5px;line-height:1.5;">';
+    [items[i], items[i + 1]].forEach((pairItem) => {
+      if (!pairItem || pairItem[0] === '') {
+        out += '<div style="flex:1;"></div>';
+        return;
       }
-      y += lineGap;
-    }
+      const [l, v] = pairItem;
+      const val = (v === undefined || v === null || v === '') ? '—' : v;
+      out += `<div style="flex:1;display:flex;">
+        <div style="width:96px;flex:none;color:#5a5a5a;">${escapeHtml(l)}</div>
+        <div style="flex:1;color:#141414;">${escapeHtml(val)}</div>
+      </div>`;
+    });
+    out += '</div>';
   }
+  out += '</div>';
+  return out;
+}
 
-  function paragraph(text) {
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(9.5);
-    doc.setTextColor(20, 20, 20);
-    const lines = doc.splitTextToSize(String(text || '—'), PDF_CONTENT_W);
-    ensureSpace(lineGap * lines.length);
-    doc.text(lines, PDF_MARGIN, y);
-    y += lineGap * lines.length;
+function photoRowHtml(labelsAndData) {
+  const valid = labelsAndData.filter((x) => x.dataUrl);
+  if (!valid.length) {
+    return '<div style="font-size:11.5px;color:#999;padding:6px 0;">（無照片）</div>';
   }
+  const cols = Math.min(valid.length, 4);
+  const gap = 8;
+  const boxW = Math.floor((PDF_CONTENT_W_PX - gap * (cols - 1)) / cols);
+  const boxH = Math.floor(boxW * 0.78);
+  let out = '<div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;">';
+  valid.forEach((item) => {
+    out += `<div style="width:${boxW}px;">
+      <img src="${item.dataUrl}" style="width:${boxW}px;height:${boxH}px;object-fit:cover;border-radius:4px;border:1px solid #ddd;display:block;" />
+      <div style="font-size:9.5px;color:#6e6e6e;margin-top:3px;">${escapeHtml(item.label)}</div>
+    </div>`;
+  });
+  out += '</div>';
+  return out;
+}
 
-  async function photoRow(labelsAndData) {
-    // labelsAndData: [{label, dataUrl}, ...] 最多 4 張，一行排開
-    const valid = labelsAndData.filter((x) => x.dataUrl);
-    if (!valid.length) {
-      paragraph('（無照片）');
-      return;
-    }
-    const gap = 3;
-    const cols = Math.min(valid.length, 4);
-    const boxW = (PDF_CONTENT_W - gap * (cols - 1)) / cols;
-    const boxH = boxW * 0.78;
-    ensureSpace(boxH + 8);
-    let x = PDF_MARGIN;
-    for (let i = 0; i < valid.length; i++) {
-      if (i > 0 && i % 4 === 0) {
-        y += boxH + 8;
-        ensureSpace(boxH + 8);
-        x = PDF_MARGIN;
-      }
-      try {
-        const fmt = valid[i].dataUrl.indexOf('image/png') !== -1 ? 'PNG' : 'JPEG';
-        doc.addImage(valid[i].dataUrl, fmt, x, y, boxW, boxH, undefined, 'FAST');
-      } catch (e) { /* 忽略單張圖片錯誤，避免整份 PDF 失敗 */ }
-      doc.setFontSize(7.5);
-      doc.setTextColor(110, 110, 110);
-      doc.text(valid[i].label, x, y + boxH + 3.5);
-      x += boxW + gap;
-    }
-    y += boxH + 9;
-  }
+function signatureBlockHtml(label, dataUrl) {
+  return `<div style="margin:8px 0;">
+    <div style="font-size:11.5px;color:#5a5a5a;margin-bottom:4px;">${escapeHtml(label)}</div>
+    <div style="width:300px;height:90px;border:1px solid #ccc;border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;">
+      ${dataUrl ? `<img src="${dataUrl}" style="max-width:100%;max-height:100%;" />` : '<span style="color:#bbb;font-size:11px;">未簽名</span>'}
+    </div>
+  </div>`;
+}
 
-  async function signatureBlock(label, dataUrl) {
-    ensureSpace(28);
-    doc.setFontSize(9.5);
-    doc.setTextColor(90, 90, 90);
-    doc.text(label, PDF_MARGIN, y);
-    y += 3;
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(PDF_MARGIN, y, 80, 24);
-    if (dataUrl) {
-      try { doc.addImage(dataUrl, 'PNG', PDF_MARGIN + 1, y + 1, 78, 22, undefined, 'FAST'); } catch (e) {}
-    }
-    y += 24 + 6;
-  }
+async function waitForImages(container) {
+  const imgs = Array.from(container.querySelectorAll('img'));
+  await Promise.all(imgs.map((img) => {
+    if (img.complete) return Promise.resolve();
+    return new Promise((resolve) => {
+      img.addEventListener('load', resolve, { once: true });
+      img.addEventListener('error', resolve, { once: true });
+    });
+  }));
+}
 
-  /* ---------- 標題區 ---------- */
-  doc.setFont(undefined, 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(15, 15, 15);
-  doc.text(BRAND_NAME, PDF_MARGIN, y);
-  y += 6.5;
-  doc.setFont(undefined, 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor(60, 60, 60);
-  doc.text(BRAND_SUBTITLE, PDF_MARGIN, y);
-
-  doc.setFont(undefined, 'bold');
-  doc.setFontSize(13);
-  doc.setTextColor(37, 99, 235);
-  doc.text(repair.caseId, PDF_PAGE_W - PDF_MARGIN, y - 3, { align: 'right' });
-  y += 6;
-  doc.setDrawColor(20, 20, 20);
-  doc.setLineWidth(0.8);
-  doc.line(PDF_MARGIN, y, PDF_PAGE_W - PDF_MARGIN, y);
-  y += 7;
-
-  /* ---------- 基本資料 ---------- */
-  h2('基本資料');
-  twoCol([
-    ['案件編號', repair.caseId],
-    ['技師', repair.basic.technician],
-    ['建立時間', formatDateTime(repair.createdAt)],
-    ['完成時間', repair.completedAt ? formatDateTime(repair.completedAt) : '—'],
-    ['客戶姓名', repair.basic.customerName],
-    ['聯絡方式', repair.basic.contact],
-    ['手機型號', repair.basic.phoneModel],
-    ['案件狀態', statusLabel(repair.status)],
-  ]);
-  y += 2;
-
-  /* ---------- 維修前外觀檢查 ---------- */
-  h1('維修前外觀檢查');
+function buildRepairReportHtml(repair) {
   const ap = repair.preCheck.appearance;
-  twoCol([
-    ['螢幕', ap.screen], ['背板', ap.back],
-    ['邊框', ap.frame], ['鏡頭玻璃', ap.cameraGlass],
-    ['機身', ap.body], ['', ''],
-  ]);
   const dmg = repair.preCheck.existingDamage;
   const dmgList = [];
   if (dmg.none) dmgList.push('無');
@@ -208,28 +137,14 @@ async function generateRepairPDF(repair) {
   if (dmg.cameraBroken) dmgList.push('鏡頭破損');
   if (dmg.bodyDeformed) dmgList.push('機身變形');
   if (dmg.other) dmgList.push('其他：' + (dmg.otherText || ''));
-  row('既有損傷', dmgList.join('、') || '無');
-  y += 2;
 
-  /* ---------- 維修前功能檢查 ---------- */
-  h2('維修前功能檢查');
   const fc = repair.preCheck.functionCheck;
   const fcLabels = {
     powerOn: '開機', screenTouch: '螢幕／觸控', cameras: '前後鏡頭',
     faceId: 'Face ID／生物辨識', speakerMic: '喇叭／麥克風',
     charging: '充電', flashlight: '手電筒', buttons: '按鍵',
   };
-  Object.keys(fcLabels).forEach((k) => {
-    const item = fc[k] || {};
-    row(fcLabels[k], checkLabel(item.status) + (item.note ? `（備註：${item.note}）` : ''));
-  });
-  if (repair.preCheck.otherFault && repair.preCheck.otherFault.has) {
-    row('其他原有故障', repair.preCheck.otherFault.text || '—');
-  }
-  y += 2;
 
-  /* ---------- 維修內容 ---------- */
-  h1('本次維修項目');
   const items = repair.repairContent.items || {};
   const itemLabels = {
     battery: '電池更換', screen: '螢幕更換', camera: '鏡頭更換',
@@ -237,47 +152,16 @@ async function generateRepairPDF(repair) {
   };
   const chosenItems = Object.keys(itemLabels).filter((k) => items[k]).map((k) => itemLabels[k]);
   if (items.other) chosenItems.push('其他：' + (items.otherText || ''));
-  row('維修項目', chosenItems.join('、') || '—');
-  row('維修金額', repair.repairContent.price ? `NT$ ${repair.repairContent.price}` : '—');
   const partLabels = { original: '原廠', originalUsed: '原廠拆機', aftermarket: '副廠', other: '其他' };
-  row('零件類型', (partLabels[repair.repairContent.partType] || '—') +
-    (repair.repairContent.partType === 'other' && repair.repairContent.partTypeOtherText ? `（${repair.repairContent.partTypeOtherText}）` : ''));
-  y += 2;
 
-  /* ---------- 維修前照片 ---------- */
-  h2('維修前照片');
-  await photoRow([
-    { label: '手機正面', dataUrl: repair.prePhotos.front },
-    { label: '手機背面', dataUrl: repair.prePhotos.back },
-    { label: '維修部位', dataUrl: repair.prePhotos.repairArea },
-    { label: '明顯損傷', dataUrl: repair.prePhotos.damage },
-  ]);
-
-  /* ---------- 維修完成檢查 ---------- */
-  h1('維修完成檢查');
   const pc = repair.postCheck.items || {};
   const pcLabels = {
     powerOn: '可正常開機', screenTouch: '螢幕／觸控正常', repairFunction: '本次維修功能正常',
     camera: '相機正常', faceId: 'Face ID／生物辨識正常', charging: '充電正常',
     noOverheat: '無異常發熱／異味', noNewDamage: '外觀無新增損傷',
   };
-  Object.keys(pcLabels).forEach((k) => {
-    row(pcLabels[k], checkLabel(pc[k]));
-  });
   const postAbn = repair.postCheck.abnormal || {};
-  row('維修後異常／備註', postAbn.has ? (postAbn.text || '—') : '無');
-  y += 2;
 
-  /* ---------- 維修完成照片 ---------- */
-  h2('維修完成照片');
-  await photoRow([
-    { label: '手機正面', dataUrl: repair.postPhotos.front },
-    { label: '手機背面', dataUrl: repair.postPhotos.back },
-    { label: '維修部位', dataUrl: repair.postPhotos.repairArea },
-  ]);
-
-  /* ---------- 客戶確認 ---------- */
-  h1('客戶確認');
   const cc = repair.customerConfirm || {};
   const ccTexts = [
     '維修前手機狀況已確認。',
@@ -286,26 +170,156 @@ async function generateRepairPDF(repair) {
     '本人已確認目前手機狀況。',
     '如有未完成或無法測試之項目，技師已向本人說明。',
   ];
-  ['item1', 'item2', 'item3', 'item4', 'item5'].forEach((k, idx) => {
-    row(cc[k] ? '☑' : '☐', ccTexts[idx]);
+
+  let html = '';
+  html += `<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #141414;padding-bottom:10px;margin-bottom:10px;">
+    <div>
+      <div style="font-size:22px;font-weight:800;color:#0f0f0f;">${escapeHtml(BRAND_NAME)}</div>
+      <div style="font-size:14px;color:#3c3c3c;margin-top:2px;">${escapeHtml(BRAND_SUBTITLE)}</div>
+    </div>
+    <div style="font-size:17px;font-weight:800;color:#2563eb;">${escapeHtml(repair.caseId)}</div>
+  </div>`;
+
+  html += h2Html('基本資料');
+  html += twoColHtml([
+    ['案件編號', repair.caseId],
+    ['技師', repair.basic.technician],
+    ['建立時間', formatDateTime(repair.createdAt)],
+    ['完成時間', repair.completedAt ? formatDateTime(repair.completedAt) : '—'],
+    ['客戶姓名', repair.basic.customerName],
+    ['聯絡方式', repair.basic.contact],
+    ['手機型號', repair.basic.phoneModel],
+    ['案件狀態', statusLabel(repair.status)],
+  ]);
+
+  html += h1Html('維修前外觀檢查');
+  html += twoColHtml([
+    ['螢幕', ap.screen], ['背板', ap.back],
+    ['邊框', ap.frame], ['鏡頭玻璃', ap.cameraGlass],
+    ['機身', ap.body], ['', ''],
+  ]);
+  html += rowHtml('既有損傷', dmgList.join('、') || '無');
+
+  html += h2Html('維修前功能檢查');
+  Object.keys(fcLabels).forEach((k) => {
+    const item = fc[k] || {};
+    html += rowHtml(fcLabels[k], checkLabel(item.status) + (item.note ? `（備註：${item.note}）` : ''));
   });
-  y += 2;
-
-  /* ---------- 簽名 ---------- */
-  h2('簽名');
-  await signatureBlock('客戶簽名', repair.signatures.customer);
-  await signatureBlock('技師簽名', repair.signatures.technician);
-
-  /* ---------- 頁尾 ---------- */
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let p = 1; p <= pageCount; p++) {
-    doc.setPage(p);
-    doc.setFontSize(7.5);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`${repair.caseId}　${BRAND_NAME}　第 ${p}／${pageCount} 頁`, PDF_PAGE_W / 2, PDF_PAGE_H - 6, { align: 'center' });
+  if (repair.preCheck.otherFault && repair.preCheck.otherFault.has) {
+    html += rowHtml('其他原有故障', repair.preCheck.otherFault.text || '—');
   }
 
-  const blob = doc.output('blob');
-  const dataUrl = doc.output('datauristring');
+  html += h1Html('本次維修項目');
+  html += rowHtml('維修項目', chosenItems.join('、') || '—');
+  html += rowHtml('維修金額', repair.repairContent.price ? `NT$ ${repair.repairContent.price}` : '—');
+  html += rowHtml('零件類型', (partLabels[repair.repairContent.partType] || '—') +
+    (repair.repairContent.partType === 'other' && repair.repairContent.partTypeOtherText ? `（${repair.repairContent.partTypeOtherText}）` : ''));
+
+  html += h2Html('維修前照片');
+  html += photoRowHtml([
+    { label: '手機正面', dataUrl: repair.prePhotos.front },
+    { label: '手機背面', dataUrl: repair.prePhotos.back },
+    { label: '維修部位', dataUrl: repair.prePhotos.repairArea },
+    { label: '明顯損傷', dataUrl: repair.prePhotos.damage },
+  ]);
+
+  html += h1Html('維修完成檢查');
+  Object.keys(pcLabels).forEach((k) => {
+    html += rowHtml(pcLabels[k], checkLabel(pc[k]));
+  });
+  html += rowHtml('維修後異常／備註', postAbn.has ? (postAbn.text || '—') : '無');
+
+  html += h2Html('維修完成照片');
+  html += photoRowHtml([
+    { label: '手機正面', dataUrl: repair.postPhotos.front },
+    { label: '手機背面', dataUrl: repair.postPhotos.back },
+    { label: '維修部位', dataUrl: repair.postPhotos.repairArea },
+  ]);
+
+  html += h1Html('客戶確認');
+  ['item1', 'item2', 'item3', 'item4', 'item5'].forEach((k, idx) => {
+    html += rowHtml(cc[k] ? '☑' : '☐', ccTexts[idx]);
+  });
+
+  html += h2Html('簽名');
+  html += `<div style="display:flex;gap:24px;flex-wrap:wrap;">
+    ${signatureBlockHtml('客戶簽名', repair.signatures.customer)}
+    ${signatureBlockHtml('技師簽名', repair.signatures.technician)}
+  </div>`;
+
+  html += `<div style="margin-top:16px;padding-top:8px;border-top:1px solid #ddd;font-size:9.5px;color:#999;text-align:center;">
+    ${escapeHtml(repair.caseId)} ・ ${escapeHtml(BRAND_NAME)}
+  </div>`;
+
+  return html;
+}
+
+/**
+ * @param {Object} repair 完整案件資料
+ * @returns {Promise<{doc: any, blob: Blob, dataUrl: string, filename: string}>}
+ */
+async function generateRepairPDF(repair) {
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    throw new Error('PDF 產生元件尚未載入完成，請確認網路連線後重試。');
+  }
+  if (!window.html2canvas) {
+    throw new Error('PDF 圖片繪製元件尚未載入完成，請確認網路連線後重試。');
+  }
+  const { jsPDF } = window.jspdf;
+
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.top = '0';
+  container.style.left = '-99999px';
+  container.style.width = PDF_RENDER_WIDTH_PX + 'px';
+  container.style.padding = PDF_MARGIN_PX + 'px';
+  container.style.background = '#ffffff';
+  container.style.boxSizing = 'border-box';
+  container.style.fontFamily = PDF_FONT_STACK;
+  container.style.color = '#141414';
+  container.innerHTML = buildRepairReportHtml(repair);
+  document.body.appendChild(container);
+
+  let blob;
+  let dataUrl;
+  let doc;
+  try {
+    await waitForImages(container);
+    const canvas = await window.html2canvas(container, {
+      scale: PDF_RENDER_SCALE,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      windowWidth: PDF_RENDER_WIDTH_PX,
+    });
+
+    doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageWpx = canvas.width;
+    const pageHpx = Math.floor(pageWpx * (PDF_PAGE_H / PDF_PAGE_W));
+    const totalH = canvas.height;
+    let renderedH = 0;
+    let first = true;
+    while (renderedH < totalH) {
+      const sliceH = Math.min(pageHpx, totalH - renderedH);
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = pageWpx;
+      pageCanvas.height = sliceH;
+      const ctx = pageCanvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+      ctx.drawImage(canvas, 0, renderedH, pageWpx, sliceH, 0, 0, pageWpx, sliceH);
+      const imgData = pageCanvas.toDataURL('image/jpeg', 0.92);
+      if (!first) doc.addPage();
+      const imgHmm = (sliceH / pageWpx) * PDF_PAGE_W;
+      doc.addImage(imgData, 'JPEG', 0, 0, PDF_PAGE_W, imgHmm);
+      renderedH += sliceH;
+      first = false;
+    }
+
+    blob = doc.output('blob');
+    dataUrl = doc.output('datauristring');
+  } finally {
+    container.remove();
+  }
+
   return { doc, blob, dataUrl, filename: pdfFileName(repair.caseId) };
 }
