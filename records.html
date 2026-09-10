@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+<script src="js/firebase-init.js"></script>
 <script src="js/auth.js"></script>
 <title>案件紀錄</title>
 <link rel="stylesheet" href="css/style.css" />
@@ -41,7 +45,7 @@
 
     <div class="card" style="margin-top:22px;">
       <div class="card-title">資料備份</div>
-      <div class="card-hint">目前案件資料儲存在此裝置的瀏覽器中，建議定期匯出備份。</div>
+      <div class="card-hint">案件資料已同步至雲端，建議仍定期匯出備份。</div>
       <div class="btn-block-group">
         <button type="button" class="btn btn-secondary" id="btnExport">⬇️ 匯出全部案件（JSON）</button>
         <button type="button" class="btn btn-outline" id="btnImport">⬆️ 匯入案件（JSON）</button>

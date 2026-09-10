@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+<script src="js/firebase-init.js"></script>
 <script src="js/auth.js"></script>
 <title>手機維修管理</title>
 <link rel="stylesheet" href="css/style.css" />
@@ -45,7 +49,7 @@
     </div>
 
     <div class="storage-warning" style="margin-top:6px;">
-      目前案件資料儲存在此裝置的瀏覽器中。清除瀏覽器網站資料、使用無痕模式或更換裝置可能造成資料遺失，建議定期匯出備份。
+      案件資料已同步至雲端，登入同一組帳號即可在不同裝置查看與繼續編輯，建議仍定期匯出備份。
     </div>
   </div>
 </div>

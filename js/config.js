@@ -28,15 +28,17 @@ const PHOTO_JPEG_QUALITY = 0.72;
 const PDF_FILENAME_SUFFIX = "_手機維修檢查表.pdf";
 
 /* ------------------------------------------------------------
- * 未來後端擴充位置
+ * 後端說明
  * ------------------------------------------------------------
- * 目前所有資料存取都集中在 js/db.js 內的下列函式：
+ * 資料存取都集中在 js/db.js 內的下列函式：
  *   allocateNextRepairNumber()
  *   saveRepair() / updateRepair()
  *   getRepair() / getAllRepairs()
  *   deleteRepair()
  *   exportRepairs() / importRepairs()
- * 未來若要改接 Firebase / Supabase / 自建 API，
- * 只需要把 js/db.js 內這些函式的「內部實作」換成 fetch()/SDK 呼叫，
- * 呼叫端（wizard.js / records.js / detail.js / home.js）完全不用修改。
+ * 目前的實作是 Firebase Firestore（見 js/firebase-init.js 的
+ * FIREBASE_CONFIG），支援多裝置即時同步、案件編號全域不重複。
+ * 若未來要換成其他後端，只需要把 js/db.js 內這些函式的「內部實作」
+ * 換掉，呼叫端（wizard.js / records.js / detail.js / home.js）
+ * 完全不用修改。
  * ------------------------------------------------------------ */
